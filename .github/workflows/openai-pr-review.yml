@@ -57,12 +57,10 @@ jobs:
           echo "${DIFF}"
           
           # Build the multi-line prompt using printf
-          PROMPT=$(printf '%s\n' "You are a senior Python code reviewer. Review this code diff thoroughly." \
-          "Tasks:" \
-          "1. Look for bugs or logical issues in the code." \
-          "2. Ensure all Python functions have docstrings that begin with \"This function will ...\"." \
-          "3. If everything is perfect, respond with only PASS (all caps)." \
-          "4. Otherwise, provide specific and concise suggestions.")
+          PROMPT=$(printf '%s\n' "You’re a senior Python code reviewer. Given a code diff, do the following:" \
+          "1. Find bugs or logic issues." \
+          "2. Ensure each function has a docstring starting with \"This function will ...\"." \
+          "3. If all is good, reply with PASS. Else, give concise suggestions.")
           echo "PROMPT content:"
           echo "${PROMPT}"
           
