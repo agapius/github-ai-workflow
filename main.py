@@ -14,6 +14,9 @@ def print_good_morning(name):
 def print_good_evening(name):
     print(f'Good evening, {name}')
 
+def print_motivation(name):
+    print(f'Keep trying - you\'ll make it, {name}')
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('Jasper')
