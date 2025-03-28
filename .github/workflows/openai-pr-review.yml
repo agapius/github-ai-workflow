@@ -15,9 +15,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up DIFF environment variable
+      - name: Get PR diff
+        id: diff
         run: |
-          echo "DIFF=$(git diff)" >> $GITHUB_ENV
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+      
+          echo "DIFF<<EOF" >> $GITHUB_ENV
+          cat pr_diff.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Call OpenAI API
         id: openai
