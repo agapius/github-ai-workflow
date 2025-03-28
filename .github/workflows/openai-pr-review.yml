@@ -17,9 +17,15 @@ jobs:
 
       - name: Set up DIFF environment variable
         run: |
-          echo "DIFF=$(git diff)" >> $GITHUB_ENV
+          # Fetch the base branch from the PR (github.base_ref is available for pull_request events)
+          git fetch origin ${{ github.base_ref }} --depth=1
+          echo "Calculating diff vs origin/${{ github.base_ref }}"
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD)
+          echo "DIFF<<EOF" >> $GITHUB_ENV
+          echo "$DIFF" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           echo "DIFF variable set to:"
-          git diff
+          echo "$DIFF"
 
       - name: Call OpenAI API with Debug Info
         id: openai
