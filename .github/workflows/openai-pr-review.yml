@@ -15,22 +15,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get PR diff
-        id: diff
+      - name: Set up DIFF environment variable
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
-      
-          echo "DIFF<<EOF" >> $GITHUB_ENV
-          cat pr_diff.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "DIFF=$(git diff)" >> $GITHUB_ENV
+          echo "DIFF variable set to:"
+          git diff
 
-      - name: Call OpenAI API
+      - name: Call OpenAI API with Debug Info
         id: openai
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DIFF: ${{ env.DIFF }}
         run: |
+          set -x  # Enable shell debugging
+          
+          # Print DIFF variable for debugging
+          echo "DIFF content:"
+          echo "${DIFF}"
+          
+          # Build the multi-line prompt using printf
           PROMPT=$(printf '%s\n' "You are a senior Python code reviewer. Review this code diff thoroughly." \
           "Tasks:" \
           "1. Look for bugs or logical issues in the code." \
@@ -38,6 +41,11 @@ jobs:
           "3. If everything is perfect, respond with only PASS (all caps)." \
           "4. Otherwise, provide specific and concise suggestions.")
           
+          # Print PROMPT variable for debugging
+          echo "PROMPT content:"
+          echo "${PROMPT}"
+          
+          # Create the JSON payload with jq
           BODY=$(jq -n --arg diff "${DIFF}" --arg prompt "$PROMPT" '{
             model: "gpt-3.5-turbo",
             messages: [
@@ -46,21 +54,35 @@ jobs:
             ]
           }')
           
+          # Print BODY variable for debugging
+          echo "BODY content:"
+          echo "${BODY}"
+          
+          # Call the OpenAI API
           RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -d "$BODY")
           
+          # Print the API response for debugging
+          echo "API RESPONSE:"
+          echo "$RESPONSE"
+          
+          # Save the response to a file for further inspection
           echo "$RESPONSE" > response.json
           
+          # Check for errors in the API response
           ERROR_MSG=$(jq -r '.error.message // empty' response.json)
           if [[ -n "$ERROR_MSG" ]]; then
             echo "::error::OpenAI API error: $ERROR_MSG"
             exit 1
           fi
           
+          # Extract and print the suggestions
           SUGGESTIONS=$(jq -r '.choices[0].message.content' response.json)
+          echo "SUGGESTIONS: ${SUGGESTIONS}"
           
+          # Save suggestions to the GitHub Actions environment
           echo "SUGGESTIONS<<EOF" >> $GITHUB_ENV
           echo "$SUGGESTIONS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
