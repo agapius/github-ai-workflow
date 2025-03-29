@@ -119,6 +119,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: "🤖 OpenAI found issues in the code."
+          body: ${{ env.SUGGESTIONS }}
           event: COMMENT
-          comments: ${{ env.SUGGESTIONS }}
