@@ -57,10 +57,23 @@ jobs:
           echo "${DIFF}"
           
           # Build the multi-line prompt using printf
-          PROMPT=$(printf '%s\n' "You’re a senior Python code reviewer. Given a code diff, do the following:" \
-          "1. Find bugs or logic issues." \
-          "2. Ensure each function has a docstring starting with \"This function will ...\"." \
-          "3. If all is good, reply with PASS. Else, give concise suggestions.")
+          PROMPT=$(printf '%s\n' \
+            "You’re a senior Python code reviewer. Given a code diff, do the following:" \
+            "1. Find bugs or logic issues." \
+            "2. Ensure each function has a docstring starting with \"This function will ...\"." \
+            "3. If everything is perfect, respond with only: PASS (in all caps, no other text)." \
+            "" \
+            "If there are issues, respond as a JSON array with one or more objects like this:" \
+            "" \
+            "{ " \
+            "  \"file\": \"main.py\"," \
+            "  \"line\": 17," \
+            "  \"comment\": \"This function is missing a docstring. Suggested: \\\"This function will print a motivational quote.\\\"\"" \
+            "}" \
+            "" \
+            "Only return the JSON — do not explain it."
+          )
+          
           echo "PROMPT content:"
           echo "${PROMPT}"
           
@@ -101,3 +114,174 @@ jobs:
           echo "SUGGESTIONS<<EOF" >> $GITHUB_ENV
           echo "$SUGGESTIONS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+
+      - name: Create inline review comments
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-review@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          body: |
+            🤖 OpenAI found issues in the code.
+          event: COMMENT
+          comments: |
+            [
+              {
+                "path": "main.py",
+                "line": 17,
+                "body": "This function is missing a docstring. Suggested: `This function will print a motivational quote.`"
+              }
+            ]
+Key Fixes and Additions
+Conditional Inline Comments:
+The "Create inline review comments" step now runs only on pull request events by using the condition:
+
+yaml
+Copy
+if: ${{ github.event_name == 'pull_request' }}
+Consistent Shell Usage:
+Both the DIFF setup and API call steps use shell: bash to ensure consistency.
+
+Multi-line Variable Handling:
+The DIFF variable is saved using the <<EOF method to support multi-line content.
+
+Inline Comment JSON:
+The comments input is provided as a properly indented JSON array.
+
+This workflow now fetches the diff, calls the OpenAI API for code review, and creates inline review comments on the pull request if issues are found. You can adjust the JSON structure in the comments field as needed for your repository.
+
+
+
+
+You said:
+i get Undefined parameter: "comments" - i want a super safe yaml that works with github workflow
+
+
+ChatGPT said:
+Reasoned for 16 seconds
+Below is a revised workflow that uses a single‑line JSON string for the inline comments. This should avoid the "Undefined parameter: 'comments'" error and work safely in GitHub Actions:
+
+yaml
+Copy
+name: OpenAI Code Review Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  openai_code_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up DIFF environment variable
+        shell: bash
+        run: |
+          # Use GITHUB_BASE_REF if available; otherwise, default to "main"
+          BASE_BRANCH="${GITHUB_BASE_REF:-main}"
+          echo "Using base branch: ${BASE_BRANCH}"
+          
+          # Fetch the base branch with a shallow clone
+          git fetch origin ${BASE_BRANCH} --depth=1
+          
+          echo "Calculating diff vs origin/${BASE_BRANCH}"
+          
+          # Calculate the merge base; if none is found, fall back to a direct diff
+          BASE=$(git merge-base origin/${BASE_BRANCH} HEAD) || true
+          if [ -z "$BASE" ]; then
+            echo "No merge base found, falling back to diff between origin/${BASE_BRANCH} and HEAD"
+            DIFF=$(git diff origin/${BASE_BRANCH} HEAD)
+          else
+            DIFF=$(git diff "$BASE" HEAD)
+          fi
+          
+          # Save multi-line DIFF variable to the GitHub Actions environment
+          echo "DIFF<<EOF" >> $GITHUB_ENV
+          echo "$DIFF" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "DIFF variable set to:"
+          echo "$DIFF"
+
+      - name: Call OpenAI API with Debug Info
+        id: openai
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DIFF: ${{ env.DIFF }}
+        run: |
+          set -x  # Enable shell debugging
+          
+          # Print the DIFF variable for debugging
+          echo "DIFF content:"
+          echo "${DIFF}"
+          
+          # Build the multi-line prompt using printf
+          PROMPT=$(printf '%s\n' \
+            "You’re a senior Python code reviewer. Given a code diff, do the following:" \
+            "1. Find bugs or logic issues." \
+            "2. Ensure each function has a docstring starting with \"This function will ...\"." \
+            "3. If everything is perfect, respond with only: PASS (in all caps, no other text)." \
+            "" \
+            "If there are issues, respond as a JSON array with one or more objects like this:" \
+            "" \
+            "{ \"file\": \"main.py\", \"line\": 17, \"comment\": \"This function is missing a docstring. Suggested: \\\"This function will print a motivational quote.\\\"\" }" \
+            "" \
+            "Only return the JSON — do not explain it."
+          )
+          
+          echo "PROMPT content:"
+          echo "${PROMPT}"
+          
+          # Create the JSON payload using jq
+          BODY=$(jq -n --arg diff "${DIFF}" --arg prompt "$PROMPT" '{
+            model: "gpt-3.5-turbo",
+            messages: [
+              { "role": "system", "content": $prompt },
+              { "role": "user", "content": $diff }
+            ]
+          }')
+          echo "BODY content:"
+          echo "${BODY}"
+          
+          # Call the OpenAI API
+          RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -d "$BODY")
+          echo "API RESPONSE:"
+          echo "$RESPONSE"
+          
+          # Save the API response for inspection
+          echo "$RESPONSE" > response.json
+          
+          # Check for errors in the API response
+          ERROR_MSG=$(jq -r '.error.message // empty' response.json)
+          if [[ -n "$ERROR_MSG" ]]; then
+            echo "::error::OpenAI API error: $ERROR_MSG"
+            exit 1
+          fi
+          
+          # Extract and print the suggestions from the API response
+          SUGGESTIONS=$(jq -r '.choices[0].message.content' response.json)
+          echo "SUGGESTIONS: ${SUGGESTIONS}"
+          
+          # Save suggestions to the GitHub Actions environment
+          echo "SUGGESTIONS<<EOF" >> $GITHUB_ENV
+          echo "$SUGGESTIONS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create inline review comments
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-review@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          body: "🤖 OpenAI found issues in the code."
+          event: COMMENT
+          comments: '[{"path": "main.py", "line": 17, "body": "This function is missing a docstring. Suggested: `This function will print a motivational quote.`"}]'
