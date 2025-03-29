@@ -27,5 +27,14 @@ class TestGreetings(unittest.TestCase):
             print_good_evening("Jasper")
         self.assertEqual(buffer.getvalue().strip(), "Good evening, Jasper")
 
+    def test_motivational_quote(self):
+        buffer = StringIO()
+        with redirect_stdout(buffer):
+            print_motivational_quote()
+        self.assertEqual(
+            buffer.getvalue().strip(),
+            "All our dreams can come true, if we have the courage to pursue them",
+        )
+
 if __name__ == "__main__":
     unittest.main()
