@@ -286,4 +286,4 @@ jobs:
           pull-request-number: ${{ github.event.pull_request.number }}
           body: "🤖 OpenAI found issues in the code."
           event: COMMENT
-          comments: '[{"path": "main.py", "line": 17, "body": "This function is missing a docstring. Suggested: `This function will print a motivational quote.`"}]'
+          comments: ${{ env.SUGGESTIONS }}
