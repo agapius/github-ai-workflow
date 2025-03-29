@@ -227,12 +227,14 @@ jobs:
             "1. Find bugs or logic issues." \
             "2. Ensure each function has a docstring starting with \"This function will ...\"." \
             "3. If everything is perfect, respond with only: PASS (in all caps, no other text)." \
-            "" \
-            "If there are issues, respond as a JSON array with one or more objects like this:" \
-            "" \
-            "{ \"file\": \"main.py\", \"line\": 17, \"comment\": \"This function is missing a docstring. Suggested: \\\"This function will print a motivational quote.\\\"\" }" \
-            "" \
-            "Only return the JSON — do not explain it."
+            "Do not include hypothetical or general concerns, only include concerns that are evident in the diff."\
+            "Also, analyse the changes to ensure they adhere to these company conventions:"\
+            "1. All new code should have tests"\
+            "2. All major new features should have documentation"\
+            "For each issue found, include:"\
+            "- The exact file and line reference in the format `file.py:10`. Do not use ranges."\
+            "- A clear explanation of the concern"\
+            "- A suggested improvement"\
           )
           
           echo "PROMPT content:"
