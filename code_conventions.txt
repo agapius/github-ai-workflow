@@ -1,0 +1,197 @@
+=== COMPANY CODE CONVENTIONS ===
+
+## Typing
+
+Use static typing.
+
+Make function signatures explicit.
+- Avoid *args and **kwargs unless necessary.
+- Prefer: def func(foo: int, bar: str) -> ReturnType
+
+Avoid generic **kwargs in most functions.
+- Bad: def create(**kwargs): ...
+- Good: def create(name: str, age: int): ...
+
+Refactor highly parameterized functions.
+- Use a parameter object to group related arguments.
+
+---
+
+## Imports
+
+Use absolute imports for public modules.
+
+Use relative imports for private modules (modules with a leading underscore).
+
+In tests, absolute imports of private modules are allowed.
+
+Import modules, not objects.
+- Prefer: from django import http
+- Avoid: from django.http import HttpResponse
+
+Direct object imports are allowed for standard/common built-ins.
+- Examples: from decimal import Decimal, from typing import Optional
+
+Avoid wildcard imports (from module import *).
+
+Do not expose modules as public objects in __init__.py.
+
+---
+
+## Naming
+
+Use singular nouns for class names.
+- Bad: class UserProfiles
+- Good: class UserProfile
+
+Name private things with a leading underscore.
+- Applies to classes, methods, functions, modules, and variables.
+
+Use a trailing underscore to avoid name collisions with built-ins.
+- Example: property_ = ...
+
+Avoid suffixing kwargs with underscore. Instead, rename meaningfully.
+- Prefer: def to_string(input_date: date | None)
+- Avoid: def to_string(date_: date | None)
+
+---
+
+## Convenience Imports
+
+Use __init__.py to expose public objects only.
+
+Use underscores for private module names to enforce import consistency.
+- mypackage/__init__.py
+- mypackage/_foo.py
+
+Avoid convenience imports in packages with public children.
+- Prevents unnecessary bootstrapping and circular dependencies.
+
+---
+
+## Exceptions
+
+Raise distinct exception types for different failure modes.
+- Avoid reusing a single error class for multiple conditions.
+
+Do not include end-user messages in exception messages.
+- User-facing messages belong in the caller.
+
+Include relevant details as attributes on exception classes.
+
+Catch specific exception types. Avoid bare except.
+
+Only catch Exception if:
+- You are re-raising after logging.
+- You want to present a user-friendly error in views.
+
+Avoid catching BaseException.
+
+Prefer raising exceptions over assert for runtime checks.
+
+Assertions are for:
+- Type narrowing
+- Development-time debugging
+- Validating internal invariants
+
+Do not validate external input with assert. Use serializers.
+
+---
+
+## Return Behavior
+
+Avoid silent returns on precondition failures.
+- Bad: if not_ready(): return
+- Good: if not_ready(): raise NotReady()
+
+Use wrapper functions to explicitly handle "fire-and-forget" flows.
+- Swallow only specific exceptions in those wrappers.
+
+---
+
+## Linting and Static Analysis
+
+Never silence all errors with blanket ignores.
+
+Always specify the rule or error being silenced.
+- Good: # noqa: F401
+- Good: # type: ignore[attr-defined]
+
+Justify all silencing comments.
+- Include rationale or link to relevant bug report.
+
+---
+
+## Docstrings
+
+Start with an imperative description.
+- Format: "This function will ..."
+
+Use newline after opening and before closing triple quotes.
+- End first sentence with a period.
+
+Use type annotations for parameters and return types.
+
+Document raised exceptions using `:raises ExceptionType:` format.
+
+Use comments (# ...) for implementation detail explanations.
+Use docstrings (""" ... """) for user-facing documentation.
+
+---
+
+## Spelling
+
+Prefer American English.
+- Example: use "serializers" not "serialisers"
+
+---
+
+## HTTP Requests
+
+Use `requests` library with explicit timeouts.
+- Example: requests.get("url", timeout=10)
+
+Consider using HTTPClient or JSONClient wrappers.
+
+Do not make network requests without a timeout.
+
+---
+
+## Immutability
+
+Use immutable types when possible.
+- Use @attrs.frozen instead of @attrs.define
+- Use frozenset instead of set
+- Use tuple or Sequence instead of list
+
+Avoid mixing immutable containers with mutable internals.
+
+---
+
+## attrs vs dataclasses
+
+Prefer attrs over dataclasses.
+- attrs has more features
+- Calls super() in __init__
+- Uses less memory (slots)
+- Faster iteration (not tied to Python release schedule)
+
+Use new attrs API (`attrs.define`, `attrs.frozen`)
+- Avoid old `import attr` and `@attr.s` syntax
+
+---
+
+## Import-Time Side Effects
+
+Do not have import-time side effects.
+- No registry population
+- No logging
+- No URL lookups
+
+Register dynamic contents in application startup hooks (e.g. Django’s ready method).
+
+Use reverse_lazy instead of reverse for constants or default args.
+
+Side effects must be intentional and explicit.
+
+=== END COMPANY CODE CONVENTIONS ===
