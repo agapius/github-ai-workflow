@@ -1,0 +1,9 @@
+.env
+.python-version
+
+# PyCharm
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/*.iml
+*.iml
