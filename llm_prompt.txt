@@ -12,6 +12,12 @@ Your task is to check if the code changes in the **GIT DIFF** below strictly adh
 5.  If NO violations of the specified conventions are found, respond ONLY with: `No convention violations found.`
 6.  Be concise. Do not add explanations beyond the requested format.
 
+**IMPORTANT CLARIFICATIONS:**
+- Enforce ALL rules *literally*. Even trivial functions must follow conventions (e.g., typing, naming).
+- All function signatures MUST include explicit return type annotations (`-> None` for void functions).
+- Absence of typing, even for no-arg functions, counts as a violation.
+- Do not assume intent or context — only consider what is stated in the conventions and visible in the diff.
+
 **Code Context:**
 
 ```diff
