@@ -14,10 +14,8 @@ Your task is to check if the code changes in the **GIT DIFF** below strictly adh
 
 **IMPORTANT CLARIFICATIONS:**
 - Enforce ALL rules *literally*. Even trivial functions must follow conventions (e.g., typing, naming).
-- All function signatures MUST include explicit return type annotations (`-> None` for void functions).
-- Absence of typing, even for no-arg functions, counts as a violation.
-- Do not assume intent or context — only consider what is stated in the conventions and visible in the diff.
-
+- ONLY inspect and review the lines added or changed in the GIT DIFF.
+- Do NOT report issues in lines that were present before and are unchanged, even if they violate conventions.
 **Code Context:**
 
 ```diff
