@@ -106,7 +106,7 @@ def load_text_from_file(filename: str) -> str:
         # Catch other potential file reading errors (e.g., permissions)
         raise IOError(f"Error reading conventions file '{file_path}': {e}")
 
-def create_llm_prompt(analysis: DiffAnalysis) -> str:
+def create_llm_prompt(analysis: DiffAnalysis, debug: bool) -> str:
     """Creates a concise LLM prompt focused *only* on convention checking."""
 
     # Load the structured conventions from the file
@@ -128,12 +128,15 @@ def create_llm_prompt(analysis: DiffAnalysis) -> str:
 
     # Handle potentially empty diff content gracefully in the format string
     diff_content_to_format = analysis.diff_content if analysis.diff_content else "[No diff content available]"
-
+    if debug:
+        # In debug mode, use a hardcoded prompt for testing
+        return load_text_from_file("hardcode_prompt.txt")
     return full_prompt.format(diff=diff_content_to_format, files_content=files_content)
 
 def analyze_diff(
     api_key: str = None,
-    model_name: str = "gpt-4o" # Default to gpt-4o, can be changed
+    model_name: str = "gpt-4o", # Default to gpt-4o, can be changed
+    debug: bool = False,
 ) -> str:
     """Main function to analyze a git diff using an OpenAI LLM."""
     if not api_key:
@@ -152,7 +155,7 @@ def analyze_diff(
         return "No changes detected by git diff."
 
     print("Creating LLM prompt...")
-    prompt = create_llm_prompt(analysis)
+    prompt = create_llm_prompt(analysis, debug)
     print(f"\n\nPROMPT:\n\n{prompt}")
 
     print(f"Sending request to OpenAI model: {model_name}...")
@@ -183,11 +186,15 @@ if __name__ == "__main__":
         default="gpt-4o",
         help="OpenAI model name to use (e.g., gpt-4o, gpt-4-turbo, gpt-3.5-turbo)"
     )
+    parser.add_argument(
+        "--debug",
+        help="Use hardcoded prompt for debugging",
+    )
 
     args = parser.parse_args()
 
     try:
-        result = analyze_diff(api_key=args.api_key, model_name=args.model)
+        result = analyze_diff(api_key=args.api_key, model_name=args.model, debug=args.debug)
         print("\n=== AI Analysis ===")
         print(result)
     except (ValueError, ConnectionError, subprocess.CalledProcessError) as e:

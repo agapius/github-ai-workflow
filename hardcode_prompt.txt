@@ -1,0 +1,256 @@
+=== COMPANY CODE CONVENTIONS ===
+
+## Typing
+
+Use static typing.
+
+Make function signatures explicit.
+- Avoid *args and **kwargs unless necessary.
+- Prefer: def func(foo: int, bar: str) -> ReturnType
+
+Avoid generic **kwargs in most functions.
+- Bad: def create(**kwargs): ...
+- Good: def create(name: str, age: int): ...
+
+Refactor highly parameterized functions.
+- Use a parameter object to group related arguments.
+
+---
+
+## Imports
+
+Use absolute imports for public modules.
+
+Use relative imports for private modules (modules with a leading underscore).
+
+In tests, absolute imports of private modules are allowed.
+
+Import modules, not objects.
+- Prefer: from django import http
+- Avoid: from django.http import HttpResponse
+
+Direct object imports are allowed for standard/common built-ins.
+- Examples: from decimal import Decimal, from typing import Optional
+
+Avoid wildcard imports (from module import *).
+
+Do not expose modules as public objects in __init__.py.
+
+---
+
+## Naming
+
+Use singular nouns for class names.
+- Bad: class UserProfiles
+- Good: class UserProfile
+
+Name private things with a leading underscore.
+- Applies to classes, methods, functions, modules, and variables.
+
+Use a trailing underscore to avoid name collisions with built-ins.
+- Example: property_ = ...
+
+Avoid suffixing kwargs with underscore. Instead, rename meaningfully.
+- Prefer: def to_string(input_date: date | None)
+- Avoid: def to_string(date_: date | None)
+
+---
+
+## Convenience Imports
+
+Use __init__.py to expose public objects only.
+
+Use underscores for private module names to enforce import consistency.
+- mypackage/__init__.py
+- mypackage/_foo.py
+
+Avoid convenience imports in packages with public children.
+- Prevents unnecessary bootstrapping and circular dependencies.
+
+---
+
+## Exceptions
+
+Raise distinct exception types for different failure modes.
+- Avoid reusing a single error class for multiple conditions.
+
+Do not include end-user messages in exception messages.
+- User-facing messages belong in the caller.
+
+Include relevant details as attributes on exception classes.
+
+Catch specific exception types. Avoid bare except.
+
+Only catch Exception if:
+- You are re-raising after logging.
+- You want to present a user-friendly error in views.
+
+Avoid catching BaseException.
+
+Prefer raising exceptions over assert for runtime checks.
+
+Assertions are for:
+- Type narrowing
+- Development-time debugging
+- Validating internal invariants
+
+Do not validate external input with assert. Use serializers.
+
+---
+
+## Return Behavior
+
+Avoid silent returns on precondition failures.
+- Bad: if not_ready(): return
+- Good: if not_ready(): raise NotReady()
+
+Use wrapper functions to explicitly handle "fire-and-forget" flows.
+- Swallow only specific exceptions in those wrappers.
+
+---
+
+## Linting and Static Analysis
+
+Never silence all errors with blanket ignores.
+
+Always specify the rule or error being silenced.
+- Good: # noqa: F401
+- Good: # type: ignore[attr-defined]
+
+Justify all silencing comments.
+- Include rationale or link to relevant bug report.
+
+---
+
+## Docstrings
+
+Start with an imperative description.
+- Format: "This function will ..."
+
+Use newline after opening and before closing triple quotes.
+- End first sentence with a period.
+
+Use type annotations for parameters and return types.
+
+Document raised exceptions using `:raises ExceptionType:` format.
+
+Use comments (# ...) for implementation detail explanations.
+Use docstrings (""" ... """) for user-facing documentation.
+
+---
+
+## Spelling
+
+Prefer American English.
+- Example: use "serializers" not "serialisers"
+
+---
+
+## HTTP Requests
+
+Use `requests` library with explicit timeouts.
+- Example: requests.get("url", timeout=10)
+
+Consider using HTTPClient or JSONClient wrappers.
+
+Do not make network requests without a timeout.
+
+---
+
+## Immutability
+
+Use immutable types when possible.
+- Use @attrs.frozen instead of @attrs.define
+- Use frozenset instead of set
+- Use tuple or Sequence instead of list
+
+Avoid mixing immutable containers with mutable internals.
+
+---
+
+## attrs vs dataclasses
+
+Prefer attrs over dataclasses.
+- attrs has more features
+- Calls super() in __init__
+- Uses less memory (slots)
+- Faster iteration (not tied to Python release schedule)
+
+Use new attrs API (`attrs.define`, `attrs.frozen`)
+- Avoid old `import attr` and `@attr.s` syntax
+
+---
+
+## Import-Time Side Effects
+
+Do not have import-time side effects.
+- No registry population
+- No logging
+- No URL lookups
+
+Register dynamic contents in application startup hooks (e.g. Django’s ready method).
+
+Use reverse_lazy instead of reverse for constants or default args.
+
+Side effects must be intentional and explicit.
+
+=== END COMPANY CODE CONVENTIONS ===
+
+## Docstrings
+Start with an imperative description.
+- Format: "This function will ..."
+Use newline after opening and before closing triple quotes.
+- End first sentence with a period.
+Use type annotations for parameters and return types. **<-- Note: If you want docstrings REQUIRED, add a rule here like "All public functions/methods MUST have a docstring." Otherwise, the AI will only check format IF a docstring exists.**
+Document raised exceptions using `:raises ExceptionType:` format.
+Use comments (# ...) for implementation detail explanations.
+Use docstrings (""" ... """) for user-facing documentation.
+
+---
+[... other conventions remain the same ...]
+
+=== END COMPANY CODE CONVENTIONS ===
+
+**AI Code Reviewer Task:**
+
+You are an AI code reviewer focused *exclusively* on compliance with the **COMPANY CODE CONVENTIONS** provided above. Your *only* goal is to identify violations of these specific rules within the code changes presented in the **GIT DIFF**.
+
+**Instructions:**
+
+1.  **Analyze Changed Code:** Carefully examine *every line* that is added or modified in the **GIT DIFF** (lines starting with `+`, or lines in hunks showing `@@ -x,y +a,b @@`). Ignore lines starting with `-` or unchanged context lines.
+2.  **Apply ALL Conventions:** For *each* added or modified line (or block of lines like a new function), check it against *every rule* defined in the **COMPANY CODE CONVENTIONS**. Pay special attention to fundamental rules like **Typing** (ensure *all* functions, regardless of simplicity, have explicit argument and return type hints) and **Naming**.
+3.  **Literal Enforcement:** Apply the conventions *exactly* as written. Do not make exceptions for seemingly small functions or minor changes. If a rule is stated, it MUST be followed in the changed code.
+4.  **Ignore Other Issues:** Do NOT report on general bugs, logic errors, performance, security vulnerabilities, or stylistic points *unless* they are an *explicit violation* of a rule listed in the **COMPANY CODE CONVENTIONS**. Do not comment on code that was not changed in the diff.
+5.  **Report Violations:** For EACH violation found:
+    * Report the file and line: `path/to/file.py:LINE_NUMBER` (use the line number from the `+` lines in the diff).
+    * State the specific convention violated (e.g., "Typing: Make function signatures explicit").
+    * Provide a concise, actionable suggestion to fix the violation.
+    * *Example Violation Report:*
+        ```
+        my_module/utils.py:42 Typing: Make function signatures explicit. Suggestion: Add type hints: `def process_data(data: dict) -> bool:`
+        my_module/models.py:15 Naming Conventions: Use singular nouns for classes. Suggestion: Rename class `Items` to `Item`.
+        ```
+6.  **No Violations Found:** If, after careful review, *no* violations of the specified conventions are found in the changed code, respond ONLY with the exact text: `No convention violations found.` Do not add any other commentary.
+
+**Code Context (GIT DIFF):**
+
+```diff
+diff --git a/main.py b/main.py
+index 9e98522..3a6e1f1 100644
+--- a/main.py
++++ b/main.py
+@@ -12,9 +12,14 @@ def print_good_evening(name):
+ def print_motivational_quote():
+     print("All our dreams can come true, if we have the courage to pursue them")
+
++def print_another_motivational_quote():
++    print("All our dreams can come true, if we have the courage to pursue them")
++
++
+ # Press the green button in the gutter to run the script.
+ if __name__ == '__main__':
+     print_hi('Jasper')
+     print_good_morning('Jasper')
+     print_good_evening('Jasper')
+     print_motivational_quote()
++    print_another_motivational_quote()
