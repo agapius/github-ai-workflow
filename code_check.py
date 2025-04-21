@@ -159,8 +159,6 @@ def analyze_diff(
 
     print("Creating LLM prompt...")
     prompt = create_llm_prompt(analysis, debug)
-    print(f"\n\nPROMPT:\n\n{prompt}")
-
     print(f"Sending request to OpenAI model: {model_name}...")
     try:
         completion = client.chat.completions.create(
