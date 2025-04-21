@@ -1,11 +1,14 @@
 #! /usr/bin/env python3
 import subprocess
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from openai import OpenAI
+from openai.types import CompletionUsage
+from openai.types.chat import ChatCompletion
 from dataclasses import dataclass
 import argparse
 from dotenv import load_dotenv
+from model_pricing import MODEL_PRICING
 
 load_dotenv()
 
@@ -137,7 +140,7 @@ def analyze_diff(
     api_key: str = None,
     model_name: str = "gpt-4o", # Default to gpt-4o, can be changed
     debug: bool = False,
-) -> str:
+) -> ChatCompletion:
     """Main function to analyze a git diff using an OpenAI LLM."""
     if not api_key:
         api_key = os.getenv("OPENAI_API_KEY")
@@ -168,12 +171,20 @@ def analyze_diff(
                 "content": prompt
             }]
         )
-        return completion.choices[0].message.content
+        return completion
 
     except Exception as e:
         # Catch potential API errors
         return f"Error calling OpenAI API: {e}"
 
+def calculate_cost(usage: CompletionUsage, model_name: str) -> float:
+    """Calculates the cost of usage in Dollar based on token counts."""
+    pricing = MODEL_PRICING.get(model_name, MODEL_PRICING["gpt-4o"])
+    prompt_cost = (usage.prompt_tokens / 1_000_000) * pricing["prompt"]
+    completion_cost = (usage.completion_tokens / 1_000_000) * pricing["completion"]
+    total_cost = prompt_cost + completion_cost
+    # Round the final result to 4 decimal places before returning
+    return round(total_cost, 6)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze git diffs using an OpenAI LLM")
@@ -195,8 +206,15 @@ if __name__ == "__main__":
 
     try:
         result = analyze_diff(api_key=args.api_key, model_name=args.model, debug=args.debug)
+        analysis = result.choices[0].message.content
+        usage = result.usage
+        cost_of_usage = calculate_cost(usage, model_name=args.model)
         print("\n=== AI Analysis ===")
-        print(result)
+        print(analysis)
+        print("\n=== Cost of Usage ===")
+        print(f"  Prompt Tokens: {usage.prompt_tokens}")
+        print(f"  Completion Tokens: {usage.completion_tokens}")
+        print(f"  Cost in Dollar: {cost_of_usage}")
     except (ValueError, ConnectionError, subprocess.CalledProcessError) as e:
         print(f"\nAn error occurred: {e}")
     except Exception as e:
