@@ -133,7 +133,7 @@ def create_llm_prompt(analysis: DiffAnalysis, debug: bool) -> str:
     diff_content_to_format = analysis.diff_content if analysis.diff_content else "[No diff content available]"
     if debug:
         # In debug mode, use a hardcoded prompt for testing
-        return load_text_from_file("hardcode_prompt.txt")
+        return load_text_from_file("hardcode_instruction.txt")
     return full_prompt.format(diff=diff_content_to_format, files_content=files_content)
 
 def analyze_diff(
