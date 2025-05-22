@@ -244,31 +244,42 @@ LLM_INSTRUCTION = (
 
 # --- Functions ---
 
-def get_git_diff_against_head() -> str: # Renamed function
+def get_git_diff_against_head() -> str:
     """
-    Get the git diff for all uncommitted changes (staged and unstaged) against HEAD.
-    Returns empty string if no changes.
+    Get the git diff for all uncommitted changes against HEAD.
+    Includes a workaround for git diff potentially returning exit code 0 even with output.
+    This version is cleaned of debug print statements for production use.
     """
     try:
+        command = ["git", "diff", "--no-ext-diff", "HEAD"]
+
         process = subprocess.run(
-            ["git", "diff", "HEAD"], # Use "HEAD" to get all changes against the last commit
+            command,
             capture_output=True,
             text=True,
             check=False  # Manually check return codes
         )
-        if process.returncode == 0:  # Exit code 0 means no differences
-            return ""
-        elif process.returncode == 1:  # Exit code 1 means differences were found
-            return process.stdout
-        else:  # Other non-zero exit codes indicate an error
-            print(f"Error running 'git diff HEAD' (return code {process.returncode}):")
+
+        # Workaround logic:
+        # First, check for genuine Git command execution errors (typically exit code > 1)
+        if process.returncode > 1:
+            cmd_str = ' '.join(command) # For error message
+            error_message = f"Error running '{cmd_str}' (return code {process.returncode}):"
             if process.stderr:
-                print(f"Git stderr: {process.stderr.strip()}")
-            # Raise an error to be caught in the main block
-            raise RuntimeError(f"git diff HEAD failed with code {process.returncode}")
+                error_message += f"\nGit stderr: {process.stderr.strip()}"
+            print(error_message) # Keep this error reporting
+            raise RuntimeError(f"Git command '{cmd_str}' failed with code {process.returncode}")
+
+        # If exit code is 0 or 1, rely on stdout content.
+        # If stdout has content, we consider it a diff.
+        # If stdout is empty (or only whitespace), then no diff.
+        if process.stdout and process.stdout.strip():
+            return process.stdout
+        else:
+            return ""
+
     except FileNotFoundError:
-        print("Error: 'git' command not found. Ensure git is installed and in your PATH.")
-        print("Error: 'git' command not found. Ensure git is installed and in your PATH.")
+        print("Error: 'git' command not found. Ensure git is installed and in your PATH.") # Keep this error reporting
         raise
 
 def create_llm_prompt(diff_content: str) -> str:
