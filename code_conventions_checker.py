@@ -301,7 +301,6 @@ def get_git_diff_against_head() -> str:
     """
     Get the git diff for all uncommitted changes against HEAD.
     Includes a workaround for git diff potentially returning exit code 0 even with output.
-    This version is cleaned of debug print statements for production use.
     """
     try:
         command = ["git", "diff", "--no-ext-diff", "HEAD"]
@@ -313,8 +312,6 @@ def get_git_diff_against_head() -> str:
             check=False  # Manually check return codes
         )
 
-        # Workaround logic:
-        # First, check for genuine Git command execution errors (typically exit code > 1)
         if process.returncode > 1:
             cmd_str = ' '.join(command) # For error message
             error_message = f"Error running '{cmd_str}' (return code {process.returncode}):"
