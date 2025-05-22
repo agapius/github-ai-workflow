@@ -1,6 +1,7 @@
 .env
 .python-version
-
+code_conventions_checker.py
+code_check.py
 # PyCharm
 .idea/
 !.idea/codeStyles/
