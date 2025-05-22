@@ -265,6 +265,38 @@ LLM_INSTRUCTION = (
 
 # --- Functions ---
 
+def get_merge_base_with_branch(base_branch: str = "main") -> str | None:
+    """Finds the merge-base commit SHA between the current HEAD and a base branch."""
+    try:
+        # Get the current branch's HEAD commit SHA
+        head_commit_process = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True
+        )
+        head_commit = head_commit_process.stdout.strip()
+
+        # Get the merge base SHA
+        merge_base_process = subprocess.run(
+            ["git", "merge-base", base_branch, head_commit],
+            capture_output=True, text=True, check=True
+        )
+        merge_base_sha = merge_base_process.stdout.strip()
+
+        if not merge_base_sha: # Should be caught by check=True if command is valid
+            print(f"Warning: Could not determine merge-base between '{base_branch}' and HEAD.")
+            return None
+        return merge_base_sha
+    except subprocess.CalledProcessError as e:
+        # This can happen if base_branch doesn't exist or there's no common ancestor
+        error_output = e.stderr.strip() if e.stderr else str(e)
+        print(f"Warning: Failed to get merge-base with '{base_branch}'. "
+              f"Is '{base_branch}' a valid branch and reachable? Error: {error_output}")
+        return None
+    except FileNotFoundError:
+        # This error is handled by the main diff function, but good to be aware of
+        print("Error: 'git' command not found during merge-base lookup.")
+        raise
+
 def get_git_diff_against_head() -> str:
     """
     Get the git diff for all uncommitted changes against HEAD.
