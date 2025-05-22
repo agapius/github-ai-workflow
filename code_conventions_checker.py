@@ -323,7 +323,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default="gpt-4o", # Or another model like gpt-4-turbo
+        default="gpt-4-turbo", # Or another model like gpt-4-turbo
         help="OpenAI model name to use."
     )
 
