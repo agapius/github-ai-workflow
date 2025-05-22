@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 # --- Constants ---
 
 KRAKEN_CODE_CONVENTIONS = (
-    "=== CODE CONVENTIONS ===\n"
+    "=== COMPANY CODE CONVENTIONS ===\n"
     "\n"
     "## Typing\n"
     "\n"
@@ -255,6 +255,7 @@ LLM_INSTRUCTION = (
     "   - Provide a concise suggestion to fix the violation.\n"
     "5. If NO violations of the specified conventions are found, respond ONLY with: `No convention violations found.`\n"
     "6. Be concise. Do not add explanations beyond the requested format.\n"
+    "7. Before finalizing your response briefly rescan the changes to ensure you haven't overlooked violations from any section from the COMPANY CODE CONVENTIONS.\n"
     "\n"
     "**IMPORTANT CLARIFICATIONS:**\n"
     "- Enforce ALL rules *literally*. Even trivial functions must follow conventions (e.g., typing, naming).\n"
