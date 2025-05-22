@@ -244,24 +244,30 @@ LLM_INSTRUCTION = (
 
 # --- Functions ---
 
-def get_git_staged_diff() -> str:
-    """Get the git diff for staged changes. Returns empty string if no staged changes."""
+def get_git_diff_against_head() -> str: # Renamed function
+    """
+    Get the git diff for all uncommitted changes (staged and unstaged) against HEAD.
+    Returns empty string if no changes.
+    """
     try:
-        result = subprocess.run(
-            ["git", "diff", "--staged"],  # Focus on staged changes
+        process = subprocess.run(
+            ["git", "diff", "HEAD"],  # Changed from ["git", "diff", "--staged"]
             capture_output=True,
             text=True,
-            check=True  # Raises CalledProcessError for non-zero exit codes
+            check=False  # Manually check return codes
         )
-        return result.stdout  # stdout is empty if no staged changes (exit code 0)
+        if process.returncode == 0:  # Exit code 0 means no differences
+            return ""
+        elif process.returncode == 1:  # Exit code 1 means differences were found
+            return process.stdout
+        else:  # Other non-zero exit codes indicate an error
+            print(f"Error running 'git diff HEAD' (return code {process.returncode}):")
+            if process.stderr:
+                print(f"Git stderr: {process.stderr.strip()}")
+            # Raise an error to be caught in the main block
+            raise RuntimeError(f"git diff HEAD failed with code {process.returncode}")
     except FileNotFoundError:
         print("Error: 'git' command not found. Ensure git is installed and in your PATH.")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"Error running 'git diff --staged' (return code {e.returncode}):")
-        if e.stderr:
-            print(f"Git stderr: {e.stderr.strip()}")
-        # Potentially print e.stdout if it contains relevant error info for git command
         raise
 
 def create_llm_prompt(diff_content: str) -> str:
@@ -315,9 +321,9 @@ if __name__ == "__main__":
         print("Error: OpenAI API key not provided. Set OPENAI_API_KEY env var or use --api-key.")
         exit(1)
 
-    print("Fetching staged git diff...")
+    print("Fetching uncommitted changes against HEAD...")
     try:
-        diff_text = get_git_staged_diff()
+        diff_text = get_git_diff_against_head()
         print(f"Staged diff for {args.model}:\n{diff_text}")
     except (FileNotFoundError, subprocess.CalledProcessError, RuntimeError):
         # Error messages are printed within get_git_staged_diff or by Python
