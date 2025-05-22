@@ -379,6 +379,11 @@ if __name__ == "__main__":
         default="gpt-4o", # Or another model like gpt-4-turbo
         help="OpenAI model name to use."
     )
+    parser.add_argument(
+        "--base-branch",
+        default="master",
+        help="The base branch to compare against for the default 'all changes' diff (e.g., main, develop). Default: main."
+    )
 
     args = parser.parse_args()
 
@@ -388,6 +393,7 @@ if __name__ == "__main__":
 
     print("Fetching uncommitted changes against HEAD...")
     try:
+        merge_base_sha = get_merge_base_with_branch(args.base_branch)
         diff_text = get_git_diff_against_head()
         # print(f"Diff against head for {args.model}:\n{diff_text}")
     except (FileNotFoundError, subprocess.CalledProcessError, RuntimeError):
