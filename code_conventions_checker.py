@@ -299,9 +299,9 @@ def analyze_with_llm(api_key: str, model_name: str, prompt: str):
             messages=[{
                 "role": "user",
                 "content": prompt
-            }]
-            # Consider adding max_tokens if responses are too long or short.
-            # max_tokens=4000
+            }],
+            temperature = 0.2,  # Set a low temperature for more factual and precise output
+            max_tokens=2000
         )
         return completion.choices[0].message.content
     except Exception as e:
