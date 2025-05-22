@@ -321,7 +321,7 @@ def analyze_with_llm(api_key: str, model_name: str, prompt: str):
                 "role": "user",
                 "content": prompt
             }],
-            temperature = 0.2,  # Set a low temperature for more factual and precise output
+            temperature = 0.1,  # Set a low temperature for more factual and precise output
             max_tokens=2000
         )
         return completion.choices[0].message.content
@@ -357,7 +357,7 @@ if __name__ == "__main__":
     print("Fetching uncommitted changes against HEAD...")
     try:
         diff_text = get_git_diff_against_head()
-        print(f"Diff against head for {args.model}:\n{diff_text}")
+        # print(f"Diff against head for {args.model}:\n{diff_text}")
     except (FileNotFoundError, subprocess.CalledProcessError, RuntimeError):
         print("Failed to get git diff. Exiting.")
         exit(1)
