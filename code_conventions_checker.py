@@ -251,7 +251,7 @@ def get_git_diff_against_head() -> str: # Renamed function
     """
     try:
         process = subprocess.run(
-            ["git", "diff", "HEAD"],  # Changed from ["git", "diff", "--staged"]
+            ["git", "diff", "HEAD"], # Use "HEAD" to get all changes against the last commit
             capture_output=True,
             text=True,
             check=False  # Manually check return codes
@@ -267,6 +267,7 @@ def get_git_diff_against_head() -> str: # Renamed function
             # Raise an error to be caught in the main block
             raise RuntimeError(f"git diff HEAD failed with code {process.returncode}")
     except FileNotFoundError:
+        print("Error: 'git' command not found. Ensure git is installed and in your PATH.")
         print("Error: 'git' command not found. Ensure git is installed and in your PATH.")
         raise
 
@@ -324,14 +325,13 @@ if __name__ == "__main__":
     print("Fetching uncommitted changes against HEAD...")
     try:
         diff_text = get_git_diff_against_head()
-        print(f"Staged diff for {args.model}:\n{diff_text}")
+        print(f"Diff against head for {args.model}:\n{diff_text}")
     except (FileNotFoundError, subprocess.CalledProcessError, RuntimeError):
-        # Error messages are printed within get_git_staged_diff or by Python
         print("Failed to get git diff. Exiting.")
         exit(1)
 
     if not diff_text.strip():
-        print("No staged changes detected to analyze.")
+        print("No changes detected to analyze.")
         exit(0)
 
     print("Creating prompt for LLM...")
